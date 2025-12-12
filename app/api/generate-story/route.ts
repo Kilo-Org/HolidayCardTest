@@ -3,6 +3,12 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
 type GenerateStoryBody = {
   teamName?: string;
   names: string[];
@@ -107,12 +113,16 @@ function isModelNotFoundError(err: unknown): boolean {
   return msg.includes("not_found_error") && msg.includes("model:");
 }
 
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function POST(req: Request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
       { error: "ANTHROPIC_API_KEY is not configured." },
-      { status: 500 },
+      { status: 500, headers: corsHeaders },
     );
   }
 
@@ -122,13 +132,13 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json(
       { error: "Invalid JSON body." },
-      { status: 400 },
+      { status: 400, headers: corsHeaders },
     );
   }
 
   const validated = validateBody(body);
   if (!validated.ok) {
-    return NextResponse.json({ error: validated.error }, { status: 400 });
+    return NextResponse.json({ error: validated.error }, { status: 400, headers: corsHeaders });
   }
 
   const { teamName, names } = validated.value;
@@ -210,7 +220,7 @@ export async function POST(req: Request) {
             "Set ANTHROPIC_MODEL to a model your key has access to. Details: " +
             detail,
         },
-        { status: 500 },
+        { status: 500, headers: corsHeaders },
       );
     }
 
@@ -218,18 +228,18 @@ export async function POST(req: Request) {
     if (!story) {
       return NextResponse.json(
         { error: "Model returned an empty story." },
-        { status: 500 },
+        { status: 500, headers: corsHeaders },
       );
     }
 
-    return NextResponse.json({ story });
+    return NextResponse.json({ story }, { headers: corsHeaders });
   } catch (err) {
     // Avoid leaking internals / keys. Keep error user-friendly.
     const message =
       err instanceof Error ? err.message : "Unknown error calling Anthropic.";
     return NextResponse.json(
       { error: `Failed to generate story: ${message}` },
-      { status: 500 },
+      { status: 500, headers: corsHeaders },
     );
   }
 }
