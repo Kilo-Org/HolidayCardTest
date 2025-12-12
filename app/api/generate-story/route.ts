@@ -117,6 +117,13 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
 }
 
+export async function GET() {
+  return NextResponse.json(
+    { error: "Method not allowed. This endpoint requires a POST request with a JSON body containing 'names' (array of strings) and optional 'teamName' (string)." },
+    { status: 405, headers: { ...corsHeaders, "Allow": "POST, OPTIONS" } }
+  );
+}
+
 export async function POST(req: Request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
